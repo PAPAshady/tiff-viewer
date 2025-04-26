@@ -1,17 +1,29 @@
 import { useState } from "react";
 import "./App.css";
-import { FiMenu, FiX } from "react-icons/fi";
+import { FiMenu, FiX, FiSave } from "react-icons/fi";
 import FileUpload from "./components/FileUpload";
 import ImageGrid from "./components/ImageGrid";
 import ImageViewer from "./components/ImageViewer";
 import useMediaQuery from "./hooks/useMediaQuery";
+import { useImageChanges } from "./hooks/useImageChanges";
+import { Toast } from "./components/Toast";
 
 function App() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop ? true : false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const {
+    hasUnsavedChanges,
+    recordRotation,
+    recordDeletion,
+    recordReorder,
+    saveChanges,
+    discardChanges,
+  } = useImageChanges();
 
   const handleFileAccepted = async (file) => {
     setIsLoading(true);
@@ -87,11 +99,48 @@ function App() {
   };
 
   const handleRotate = (id) => {
+    const image = images.find((img) => img.id === id);
+    const newRotation = (image.rotation + 90) % 360;
+
     setImages(
       images.map((img) =>
-        img.id === id ? { ...img, rotation: (img.rotation + 90) % 360 } : img,
+        img.id === id ? { ...img, rotation: newRotation } : img,
       ),
     );
+
+    recordRotation(id, newRotation);
+  };
+
+  const handleDelete = (id) => {
+    setImages(images.filter((img) => img.id !== id));
+    recordDeletion(id);
+  };
+
+  const handleReorder = (oldIndex, newIndex, imageId) => {
+    const reorderedImages = [...images];
+    const [movedImage] = reorderedImages.splice(oldIndex, 1);
+    reorderedImages.splice(newIndex, 0, movedImage);
+
+    setImages(reorderedImages);
+    recordReorder(oldIndex, newIndex, imageId);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsLoading(true);
+    try {
+      await saveChanges();
+      setToastMessage({
+        type: "success",
+        text: "Changes saved successfully!",
+      });
+    } catch (error) {
+      setToastMessage({
+        type: "error",
+        text: "Failed to save changes. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -112,6 +161,19 @@ function App() {
       >
         <div className={`p-4 ${!isDesktop ? "pt-16" : ""}`}>
           <h2 className="mb-4 text-xl font-semibold">TIFF Viewer</h2>
+
+          {/* Add Save Changes button when there are unsaved changes */}
+          {hasUnsavedChanges && (
+            <button
+              onClick={handleSaveChanges}
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              disabled={isLoading}
+            >
+              <FiSave className="h-4 w-4" />
+              {isLoading ? "Saving..." : "Save Changes"}
+            </button>
+          )}
+
           <div className="space-y-2">
             <div className="cursor-pointer rounded-md p-2 hover:bg-gray-100">
               File Information
@@ -136,11 +198,18 @@ function App() {
         } `}
       >
         <div
-          className={`absolute inset-0 size-full transition-all duration-300 ease-in-out ${isSidebarOpen && !isDesktop ? "bg-black/30 backdrop-blur-sm z-[5]" : "z-[-1]"}`}
+          className={`absolute inset-0 size-full transition-all duration-300 ease-in-out ${isSidebarOpen && !isDesktop ? "z-[5] bg-black/30 backdrop-blur-sm" : "z-[-1]"}`}
         ></div>
         <div className="container mx-auto px-4 py-8">
           <div className="rounded-lg bg-white p-6 shadow-md">
-            <h1 className="mb-6 text-2xl font-bold">TIFF Image Viewer</h1>
+            <div className="mb-6 flex items-center justify-between">
+              <h1 className="text-2xl font-bold">TIFF Image Viewer</h1>
+              {hasUnsavedChanges && (
+                <span className="text-sm text-yellow-600">
+                  You have unsaved changes
+                </span>
+              )}
+            </div>
 
             {images.length === 0 ? (
               <FileUpload onFileAccepted={handleFileAccepted} />
@@ -151,7 +220,10 @@ function App() {
                     {images.length} Pages
                   </h2>
                   <button
-                    onClick={() => setImages([])}
+                    onClick={() => {
+                      setImages([]);
+                      discardChanges();
+                    }}
                     className="rounded-md bg-red-500 px-4 py-2 text-white hover:bg-red-600"
                   >
                     Clear
@@ -161,6 +233,9 @@ function App() {
                   images={images}
                   onImagesChange={setImages}
                   onImageClick={handleImageClick}
+                  onRotate={handleRotate}
+                  onDelete={handleDelete}
+                  onReorder={handleReorder}
                 />
               </div>
             )}
@@ -184,6 +259,15 @@ function App() {
           </div>
         </div>
       </main>
+
+      {/* Toast notification */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage.text}
+          type={toastMessage.type}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
     </div>
   );
 }

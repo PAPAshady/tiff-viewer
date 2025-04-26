@@ -93,11 +93,18 @@ const SortableImage = ({ image, onRotate, onDelete, onClick }) => {
   );
 };
 
-const ImageGrid = ({ images, onImagesChange, onImageClick }) => {
+const ImageGrid = ({
+  images,
+  onImagesChange,
+  onImageClick,
+  onRotate,
+  onDelete,
+  onReorder,
+}) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Add a small drag distance threshold
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -113,19 +120,8 @@ const ImageGrid = ({ images, onImagesChange, onImageClick }) => {
       const newIndex = images.findIndex((img) => img.id === over.id);
 
       onImagesChange(arrayMove(images, oldIndex, newIndex));
+      onReorder(oldIndex, newIndex, active.id);
     }
-  };
-
-  const handleRotate = (id) => {
-    onImagesChange(
-      images.map((img) =>
-        img.id === id ? { ...img, rotation: (img.rotation + 90) % 360 } : img,
-      ),
-    );
-  };
-
-  const handleDelete = (id) => {
-    onImagesChange(images.filter((img) => img.id !== id));
   };
 
   return (
@@ -143,8 +139,8 @@ const ImageGrid = ({ images, onImagesChange, onImageClick }) => {
             <SortableImage
               key={image.id}
               image={image}
-              onRotate={handleRotate}
-              onDelete={handleDelete}
+              onRotate={onRotate}
+              onDelete={onDelete}
               onClick={onImageClick}
             />
           ))}
