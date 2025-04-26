@@ -121,8 +121,42 @@ function App() {
     const [movedImage] = reorderedImages.splice(oldIndex, 1);
     reorderedImages.splice(newIndex, 0, movedImage);
 
+    // Calculate position changes for all affected images
+    const affectedRange =
+      oldIndex < newIndex
+        ? { start: oldIndex, end: newIndex }
+        : { start: newIndex, end: oldIndex };
+
+    // Record changes for all affected images
+    images.forEach((img, currentIndex) => {
+      if (img.id === imageId) {
+        // Record the moved image's change
+        recordReorder(oldIndex, newIndex, imageId);
+      } else if (
+        currentIndex >= affectedRange.start &&
+        currentIndex <= affectedRange.end
+      ) {
+        // Calculate new index for affected images
+        let newPosition;
+        if (oldIndex < newIndex) {
+          // Moving forward: images between oldIndex and newIndex shift back by 1
+          if (currentIndex > oldIndex && currentIndex <= newIndex) {
+            newPosition = currentIndex - 1;
+          }
+        } else {
+          // Moving backward: images between newIndex and oldIndex shift forward by 1
+          if (currentIndex >= newIndex && currentIndex < oldIndex) {
+            newPosition = currentIndex + 1;
+          }
+        }
+
+        if (newPosition !== undefined) {
+          recordReorder(currentIndex, newPosition, img.id);
+        }
+      }
+    });
+
     setImages(reorderedImages);
-    recordReorder(oldIndex, newIndex, imageId);
   };
 
   const handleSaveChanges = async () => {
@@ -131,12 +165,25 @@ function App() {
       await saveChanges();
       setToastMessage({
         type: "success",
-        text: "Changes saved successfully!",
+        text: "All changes saved successfully!",
       });
     } catch (error) {
+      // Extract the specific change type from the error message if available
+      const errorMatch = error.message.match(
+        /Failed to save (ROTATE|DELETE|REORDER) changes/,
+      );
+      const changeType = errorMatch ? errorMatch[1].toLowerCase() : "changes";
+
+      const errorMessages = {
+        rotate: "Failed to save rotation changes",
+        delete: "Failed to save deletion changes",
+        reorder: "Failed to save reordering changes",
+        changes: "Failed to save changes",
+      };
+
       setToastMessage({
         type: "error",
-        text: "Failed to save changes. Please try again.",
+        text: `${errorMessages[changeType]}. Please try again.`,
       });
     } finally {
       setIsLoading(false);

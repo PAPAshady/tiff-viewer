@@ -3,23 +3,14 @@ import { FiX, FiZoomIn, FiZoomOut, FiRotateCw } from "react-icons/fi";
 
 const ImageViewer = ({ image, onClose, onRotate }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-      <div className="relative w-full h-full max-w-7xl max-h-[90vh] m-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+      <div className="relative m-4 flex h-full max-h-[90vh] w-full max-w-7xl items-center justify-center">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+          className="absolute right-4 top-4 z-10 rounded-full bg-white p-2 shadow-md hover:bg-gray-100"
         >
-          <FiX className="w-6 h-6" />
+          <FiX className="h-6 w-6" />
         </button>
-
-        <div className="absolute top-4 left-4 z-10 flex gap-2">
-          <button
-            onClick={() => onRotate(image.id)}
-            className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-          >
-            <FiRotateCw className="w-6 h-6" />
-          </button>
-        </div>
 
         <TransformWrapper
           initialScale={1}
@@ -29,18 +20,18 @@ const ImageViewer = ({ image, onClose, onRotate }) => {
         >
           {({ zoomIn, zoomOut }) => (
             <>
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
+              <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 transform gap-2">
                 <button
                   onClick={() => zoomOut()}
-                  className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                  className="rounded-full bg-white p-2 shadow-md hover:bg-gray-100"
                 >
-                  <FiZoomOut className="w-6 h-6" />
+                  <FiZoomOut className="h-6 w-6" />
                 </button>
                 <button
                   onClick={() => zoomIn()}
-                  className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                  className="rounded-full bg-white p-2 shadow-md hover:bg-gray-100"
                 >
-                  <FiZoomIn className="w-6 h-6" />
+                  <FiZoomIn className="h-6 w-6" />
                 </button>
               </div>
 
@@ -48,7 +39,7 @@ const ImageViewer = ({ image, onClose, onRotate }) => {
                 <img
                   src={image.url}
                   alt={`Page ${image.pageNumber}`}
-                  className="max-w-full max-h-[90vh] object-contain"
+                  className="max-h-[90vh] max-w-full object-contain"
                   style={{ transform: `rotate(${image.rotation}deg)` }}
                 />
               </TransformComponent>
@@ -60,4 +51,4 @@ const ImageViewer = ({ image, onClose, onRotate }) => {
   );
 };
 
-export default ImageViewer; 
+export default ImageViewer;
