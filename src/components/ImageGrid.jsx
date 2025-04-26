@@ -90,12 +90,10 @@ const SortableImage = ({ image, onRotate, onDelete, onClick }) => {
   };
 
   const handleDragStart = () => {
-    console.log("SortableImage: handleDragStart");
     setIsDragging(true);
   };
 
   const handleDragEnd = () => {
-    console.log("SortableImage: handleDragEnd");
     setIsDragging(false);
   };
 
@@ -133,22 +131,17 @@ const ImageGrid = ({
   );
 
   const handleDragStart = (event) => {
-    console.log("ImageGrid: handleDragStart", event);
     const { active } = event;
     setActiveId(active.id);
   };
 
   const handleDragEnd = (event) => {
-    console.log("ImageGrid: handleDragEnd", event);
     const { active, over } = event;
     setActiveId(null);
 
     if (active && over && active.id !== over.id) {
       const oldIndex = images.findIndex((img) => img.id === active.id);
       const newIndex = images.findIndex((img) => img.id === over.id);
-
-      console.log("Reordering:", { oldIndex, newIndex, activeId: active.id });
-
       const reorderedImages = arrayMove(images, oldIndex, newIndex);
       onImagesChange(reorderedImages);
       onReorder(oldIndex, newIndex, active.id);
@@ -156,7 +149,6 @@ const ImageGrid = ({
   };
 
   const handleDragCancel = () => {
-    console.log("ImageGrid: handleDragCancel");
     setActiveId(null);
   };
 
