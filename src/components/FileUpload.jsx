@@ -1,40 +1,26 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { FiUpload } from "react-icons/fi";
 
 const FileUpload = ({ onFileAccepted }) => {
-  const [error, setError] = useState(null);
-
   const onDrop = useCallback(
     (acceptedFiles) => {
-      const file = acceptedFiles[0];
-
-      // Validate file type
-      if (!file.type.includes("tiff") && !file.type.includes("tif")) {
-        setError("Please upload a TIFF file");
-        return;
-      }
-
-      // Validate file size (100MB limit)
-      if (file.size > 100 * 1024 * 1024) {
-        setError("File size must be less than 100MB");
-        return;
-      }
-
-      setError(null);
-      onFileAccepted(file);
+      const file = acceptedFiles?.[0];
+      file && onFileAccepted(file);
     },
     [onFileAccepted],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "image/tiff": [".tif", ".tiff"],
-    },
-    maxFiles: 1,
-    multiple: false,
-  });
+  const { getRootProps, getInputProps, isDragActive, fileRejections } =
+    useDropzone({
+      onDrop,
+      accept: {
+        "image/tiff": [".tif", ".tiff"],
+      },
+      maxFiles: 1,
+      maxSize: 100 * 1024 * 1024, // 100MB
+      multiple: false,
+    });
 
   return (
     <div className="w-full">
@@ -55,8 +41,12 @@ const FileUpload = ({ onFileAccepted }) => {
         </p>
         <p className="mt-2 text-sm text-gray-400">or click to browse</p>
       </div>
-      {error && (
-        <p className="mt-2 text-center text-sm text-red-500">{error}</p>
+      {fileRejections[0]?.errors[0]?.message && (
+        <p className="mt-2 text-center text-sm text-red-500">
+          {fileRejections[0].errors[0].code === "file-too-large"
+            ? "File must be less than 100MB"
+            : "Invalid file type. Please upload a TIFF file"}
+        </p>
       )}
     </div>
   );
