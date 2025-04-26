@@ -43,21 +43,21 @@ function App() {
         id: "image-2",
         url: "https://picsum.photos/600/800?random=2",
         pageNumber: 2,
-        rotation: 90,
+        rotation: 0,
         filename: "document_002.tiff",
       },
       {
         id: "image-3",
         url: "https://picsum.photos/800/800?random=3",
         pageNumber: 3,
-        rotation: 180,
+        rotation: 0,
         filename: "document_003.tiff",
       },
       {
         id: "image-4",
         url: "https://picsum.photos/600/600?random=4",
         pageNumber: 4,
-        rotation: 270,
+        rotation: 0,
         filename: "document_004.tiff",
       },
       {
@@ -71,21 +71,21 @@ function App() {
         id: "image-6",
         url: "https://picsum.photos/600/800?random=6",
         pageNumber: 6,
-        rotation: 90,
+        rotation: 0,
         filename: "document_006.tiff",
       },
       {
         id: "image-7",
         url: "https://picsum.photos/800/800?random=7",
         pageNumber: 7,
-        rotation: 180,
+        rotation: 0,
         filename: "document_007.tiff",
       },
       {
         id: "image-8",
         url: "https://picsum.photos/600/600?random=8",
         pageNumber: 8,
-        rotation: 270,
+        rotation: 0,
         filename: "document_008.tiff",
       },
     ];
@@ -117,9 +117,16 @@ function App() {
   };
 
   const handleReorder = (oldIndex, newIndex, imageId) => {
+    console.log("handleReorder called with:", { oldIndex, newIndex, imageId });
+
+    // First record the change
+    recordReorder(oldIndex, newIndex, imageId);
+
+    // Then update the UI
     const reorderedImages = [...images];
     const [movedImage] = reorderedImages.splice(oldIndex, 1);
     reorderedImages.splice(newIndex, 0, movedImage);
+    setImages(reorderedImages);
 
     // Calculate position changes for all affected images
     const affectedRange =
@@ -127,36 +134,41 @@ function App() {
         ? { start: oldIndex, end: newIndex }
         : { start: newIndex, end: oldIndex };
 
+    console.log("Affected range:", affectedRange);
+
     // Record changes for all affected images
     images.forEach((img, currentIndex) => {
-      if (img.id === imageId) {
-        // Record the moved image's change
-        recordReorder(oldIndex, newIndex, imageId);
-      } else if (
+      if (
         currentIndex >= affectedRange.start &&
-        currentIndex <= affectedRange.end
+        currentIndex <= affectedRange.end &&
+        img.id !== imageId
       ) {
-        // Calculate new index for affected images
         let newPosition;
         if (oldIndex < newIndex) {
           // Moving forward: images between oldIndex and newIndex shift back by 1
           if (currentIndex > oldIndex && currentIndex <= newIndex) {
             newPosition = currentIndex - 1;
+            console.log("Recording affected image change:", {
+              imageId: img.id,
+              from: currentIndex,
+              to: newPosition,
+            });
+            recordReorder(currentIndex, newPosition, img.id);
           }
         } else {
           // Moving backward: images between newIndex and oldIndex shift forward by 1
           if (currentIndex >= newIndex && currentIndex < oldIndex) {
             newPosition = currentIndex + 1;
+            console.log("Recording affected image change:", {
+              imageId: img.id,
+              from: currentIndex,
+              to: newPosition,
+            });
+            recordReorder(currentIndex, newPosition, img.id);
           }
-        }
-
-        if (newPosition !== undefined) {
-          recordReorder(currentIndex, newPosition, img.id);
         }
       }
     });
-
-    setImages(reorderedImages);
   };
 
   const handleSaveChanges = async () => {
