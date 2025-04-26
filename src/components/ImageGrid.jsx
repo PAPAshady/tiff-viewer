@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
@@ -12,14 +11,11 @@ import {
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FiRotateCw, FiTrash2 } from "react-icons/fi";
-import { createPortal } from "react-dom";
 
 // Separate the image content into its own component for reuse
 const ImageContent = ({ image, onRotate, onDelete, showButtons = true }) => (

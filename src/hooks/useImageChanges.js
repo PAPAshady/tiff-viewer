@@ -124,7 +124,7 @@ export const useImageChanges = () => {
                 oldIndex: originalOldIndex,
                 // Include information about affected positions
                 affectedImages: Object.entries(newCurrentPositions)
-                  .filter(([id, _]) => id !== payload.imageId)
+                  .filter(([id]) => id !== payload.imageId)
                   .map(([id, position]) => ({
                     imageId: id,
                     originalPosition: newOriginalPositions[id],
