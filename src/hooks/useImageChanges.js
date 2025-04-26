@@ -87,8 +87,6 @@ export const useImageChanges = () => {
         }
         // For REORDER changes, track both original and current positions
         else if (changeType === CHANGE_TYPES.REORDER) {
-          console.log("Processing reorder change");
-
           // Store original position if not already stored
           const newOriginalPositions = { ...originalPositions };
           if (!newOriginalPositions[payload.imageId]) {
@@ -197,11 +195,6 @@ export const useImageChanges = () => {
   // Record reordering
   const recordReorder = useCallback(
     (oldIndex, newIndex, imageId) => {
-      console.log("recordReorder called with:", {
-        oldIndex,
-        newIndex,
-        imageId,
-      });
       addChange(CHANGE_TYPES.REORDER, {
         imageId,
         oldIndex,
@@ -236,7 +229,7 @@ export const useImageChanges = () => {
       console.error("Error saving changes:", error);
       throw error;
     }
-  }, [changes, currentPositions]);
+  }, [changes]);
 
   // Discard all unsaved changes
   const discardChanges = useCallback(() => {

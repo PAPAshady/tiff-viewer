@@ -117,8 +117,6 @@ function App() {
   };
 
   const handleReorder = (oldIndex, newIndex, imageId) => {
-    console.log("handleReorder called with:", { oldIndex, newIndex, imageId });
-
     // First record the change
     recordReorder(oldIndex, newIndex, imageId);
 
@@ -134,8 +132,6 @@ function App() {
         ? { start: oldIndex, end: newIndex }
         : { start: newIndex, end: oldIndex };
 
-    console.log("Affected range:", affectedRange);
-
     // Record changes for all affected images
     images.forEach((img, currentIndex) => {
       if (
@@ -148,22 +144,12 @@ function App() {
           // Moving forward: images between oldIndex and newIndex shift back by 1
           if (currentIndex > oldIndex && currentIndex <= newIndex) {
             newPosition = currentIndex - 1;
-            console.log("Recording affected image change:", {
-              imageId: img.id,
-              from: currentIndex,
-              to: newPosition,
-            });
             recordReorder(currentIndex, newPosition, img.id);
           }
         } else {
           // Moving backward: images between newIndex and oldIndex shift forward by 1
           if (currentIndex >= newIndex && currentIndex < oldIndex) {
             newPosition = currentIndex + 1;
-            console.log("Recording affected image change:", {
-              imageId: img.id,
-              from: currentIndex,
-              to: newPosition,
-            });
             recordReorder(currentIndex, newPosition, img.id);
           }
         }
