@@ -136,7 +136,7 @@ function App() {
         } `}
       >
         <div
-          className={`absolute inset-0 size-full transition-all duration-300 ease-in-out ${isSidebarOpen && !isDesktop ? "bg-black/30 backdrop-blur-sm" : ""}`}
+          className={`absolute inset-0 size-full transition-all duration-300 ease-in-out ${isSidebarOpen && !isDesktop ? "bg-black/30 backdrop-blur-sm z-[5]" : "z-[-1]"}`}
         ></div>
         <div className="container mx-auto px-4 py-8">
           <div className="rounded-lg bg-white p-6 shadow-md">
