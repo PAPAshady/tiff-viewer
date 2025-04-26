@@ -4,9 +4,11 @@ import { FiMenu, FiX } from "react-icons/fi";
 import FileUpload from "./components/FileUpload";
 import ImageGrid from "./components/ImageGrid";
 import ImageViewer from "./components/ImageViewer";
+import useMediaQuery from "./hooks/useMediaQuery";
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop ? true : false);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,11 +106,11 @@ function App() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full w-64 transform bg-white shadow-lg transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 z-10 h-full w-64 transform bg-white shadow-lg transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
-        <div className="p-4">
+        <div className={`p-4 ${!isDesktop ? "pt-16" : ""}`}>
           <h2 className="mb-4 text-xl font-semibold">TIFF Viewer</h2>
           <div className="space-y-2">
             <div className="cursor-pointer rounded-md p-2 hover:bg-gray-100">
@@ -129,10 +131,13 @@ function App() {
 
       {/* Main content */}
       <main
-        className={`min-h-screen transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "lg:ml-64" : ""
-        }`}
+        className={`relative min-h-screen transition-all duration-300 ease-in-out ${
+          isDesktop ? "lg:ml-64" : ""
+        } `}
       >
+        <div
+          className={`absolute inset-0 size-full transition-all duration-300 ease-in-out ${isSidebarOpen && !isDesktop ? "bg-black/30 backdrop-blur-sm" : ""}`}
+        ></div>
         <div className="container mx-auto px-4 py-8">
           <div className="rounded-lg bg-white p-6 shadow-md">
             <h1 className="mb-6 text-2xl font-bold">TIFF Image Viewer</h1>
