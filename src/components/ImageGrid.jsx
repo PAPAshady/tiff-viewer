@@ -33,7 +33,7 @@ const ImageContent = ({ image, onRotate, onDelete, showButtons = true }) => (
       </div>
     </div>
     {showButtons && (
-      <div className="absolute right-2 top-2 flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      <div className="absolute right-2 top-2 flex gap-2 transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100">
         <button
           onClick={(e) => {
             e.stopPropagation();
