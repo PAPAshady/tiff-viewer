@@ -17,12 +17,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FiRotateCw, FiTrash2 } from "react-icons/fi";
+import { baseUrl } from "../constants";
 
 // Separate the image content into its own component for reuse
 const ImageContent = ({ image, onRotate, onDelete, showButtons = true }) => (
   <>
     <img
-      src={image.url}
+      src={`${baseUrl}/${image.url}`}
       alt={`Page ${image.pageNumber}`}
       className="h-48 w-full object-cover"
       style={{ transform: `rotate(${image.rotation}deg)` }}

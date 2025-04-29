@@ -7,7 +7,7 @@ import ImageViewer from "./components/ImageViewer";
 import useMediaQuery from "./hooks/useMediaQuery";
 import { useImageChanges } from "./hooks/useImageChanges";
 import { Toast } from "./components/Toast";
-import { baseUrl, apiUrl } from "./constants";
+import { apiUrl } from "./constants";
 
 function App() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -43,7 +43,7 @@ function App() {
       // Transform the URLs into our image objects - this structure will match what we'll get from the backend
       const newImages = tiffImages.map((url, index) => ({
         id: `image-${index + 1}`,
-        url: `${baseUrl}/${url}`,
+        url,
         pageNumber: index + 1,
         rotation: 0,
         filename: file.name,

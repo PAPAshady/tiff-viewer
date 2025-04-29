@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { apiUrl, baseUrl } from "../constants";
 
 // Define change types as constants
 export const CHANGE_TYPES = {
@@ -13,22 +14,22 @@ const usePositionTracking = () => {
   const [currentPositions, setCurrentPositions] = useState({});
 
   const updatePosition = useCallback((imageId, newPosition) => {
-    setCurrentPositions(prev => ({
+    setCurrentPositions((prev) => ({
       ...prev,
-      [imageId]: newPosition
+      [imageId]: newPosition,
     }));
   }, []);
 
   const storeOriginalPosition = useCallback((imageId, position) => {
-    setOriginalPositions(prev => ({
+    setOriginalPositions((prev) => ({
       ...prev,
-      [imageId]: position
+      [imageId]: position,
     }));
   }, []);
 
   const handleDeletion = useCallback((deletedPosition) => {
     if (deletedPosition !== undefined) {
-      setCurrentPositions(prev => {
+      setCurrentPositions((prev) => {
         const newPositions = { ...prev };
         Object.entries(newPositions).forEach(([id, position]) => {
           if (position > deletedPosition) {
@@ -51,7 +52,7 @@ const usePositionTracking = () => {
     updatePosition,
     storeOriginalPosition,
     handleDeletion,
-    reset
+    reset,
   };
 };
 
@@ -60,7 +61,7 @@ export const useImageChanges = (images) => {
   const [changes, setChanges] = useState([]);
   // Track if there are unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
+
   // Use the position tracking hook
   const {
     originalPositions,
@@ -68,7 +69,7 @@ export const useImageChanges = (images) => {
     updatePosition,
     storeOriginalPosition,
     handleDeletion,
-    reset: resetPositions
+    reset: resetPositions,
   } = usePositionTracking();
 
   // Helper function to handle delete changes
@@ -254,7 +255,9 @@ export const useImageChanges = (images) => {
     if (!rotationChanges?.length) return null;
 
     return rotationChanges.reduce((acc, change) => {
-      const imageUrl = images.find(img => img.id === change.payload.imageId)?.url;
+      const imageUrl = images.find(
+        (img) => img.id === change.payload.imageId,
+      )?.url;
       if (imageUrl) {
         acc[imageUrl] = change.payload.rotation;
       }
@@ -279,14 +282,18 @@ export const useImageChanges = (images) => {
   const processReorderChanges = (reorderChanges) => {
     if (!reorderChanges?.length) return null;
 
-    return reorderChanges.map(change => {
-      const imageUrl = images.find(img => img.id === change.payload.imageId)?.url;
-      return {
-        url: imageUrl,
-        oldIndex: change.payload.oldIndex,
-        newIndex: change.payload.newIndex
-      };
-    }).filter(item => item.url);
+    return reorderChanges
+      .map((change) => {
+        const imageUrl = images.find(
+          (img) => img.id === change.payload.imageId,
+        )?.url;
+        return {
+          url: imageUrl,
+          oldIndex: change.payload.oldIndex,
+          newIndex: change.payload.newIndex,
+        };
+      })
+      .filter((item) => item.url);
   };
 
   // Save changes to backend
@@ -302,14 +309,51 @@ export const useImageChanges = (images) => {
       }, {});
 
       // Process each type of change
-      const rotationData = processRotationChanges(groupedChanges[CHANGE_TYPES.ROTATE]);
-      const deletionData = processDeletionChanges(groupedChanges[CHANGE_TYPES.DELETE]);
-      const reorderData = processReorderChanges(groupedChanges[CHANGE_TYPES.REORDER]);
+      const rotationData = processRotationChanges(
+        groupedChanges[CHANGE_TYPES.ROTATE],
+      );
+      const deletionData = processDeletionChanges(
+        groupedChanges[CHANGE_TYPES.DELETE],
+      );
+      const reorderData = processReorderChanges(
+        groupedChanges[CHANGE_TYPES.REORDER],
+      );
 
-      // Log the changes that would be sent to the backend
-      if (rotationData) console.log('Rotation changes to be saved:', rotationData);
-      if (deletionData) console.log('Deletion changes to be saved:', deletionData);
-      if (reorderData) console.log('Reorder changes to be saved:', reorderData);
+      if (rotationData) {
+        console.log("Rotation changes to be saved:", rotationData);
+
+        // fetch(`${apiUrl}/rotate/`, {
+        //   method: "POST",
+        //   headers: {
+        //     "Content-Type": "application/json",
+        //   },
+        //   body: JSON.stringify(rotationData),
+        // })
+        //   .then((res) => {
+        //     console.log(res);
+        //     return res.json();
+        //   })
+        //   .then((data) => console.log(data))
+        //   .catch((err) => console.log(err));
+      }
+
+      if (deletionData) {
+        console.log("Deletion changes to be saved:", deletionData);
+        // fetch(`${apiUrl}/delete/`, {
+        //   method: "POST",
+        //   headers: {
+        //     "Content-Type": "application/json",
+        //   },
+        //   body: JSON.stringify(deletionData),
+        // })
+        //   .then((res) => {
+        //     console.log(res);
+        //     return res.json();
+        //   })
+        //   .then((data) => console.log(data))
+        //   .catch((err) => console.log(err));
+      }
+      if (reorderData) console.log("Reorder changes to be saved:", reorderData);
 
       // Clear all tracking states after successful save
       setChanges([]);
