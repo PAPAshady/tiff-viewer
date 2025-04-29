@@ -7,6 +7,7 @@ import ImageViewer from "./components/ImageViewer";
 import useMediaQuery from "./hooks/useMediaQuery";
 import { useImageChanges } from "./hooks/useImageChanges";
 import { Toast } from "./components/Toast";
+import { baseUrl, apiUrl } from "./constants";
 
 function App() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -28,25 +29,21 @@ function App() {
   const handleFileAccepted = async (file) => {
     setIsLoading(true);
     try {
-      // Simulate backend processing delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const tiffFile = new FormData();
+      tiffFile.append("file", file);
 
-      // Simulate backend response with an array of image URLs
-      const dummyImageUrls = [
-        "https://picsum.photos/800/600?random=1",
-        "https://picsum.photos/600/800?random=2",
-        "https://picsum.photos/800/800?random=3",
-        "https://picsum.photos/600/600?random=4",
-        "https://picsum.photos/800/600?random=5",
-        "https://picsum.photos/600/800?random=6",
-        "https://picsum.photos/800/800?random=7",
-        "https://picsum.photos/600/600?random=8",
-      ];
+      const res = await fetch(`${apiUrl}/upload/`, {
+        method: "POST",
+        body: tiffFile,
+      });
+
+      const tiffData = await res.json();
+      const tiffImages = tiffData?.data || [];
 
       // Transform the URLs into our image objects - this structure will match what we'll get from the backend
-      const newImages = dummyImageUrls.map((url, index) => ({
+      const newImages = tiffImages.map((url, index) => ({
         id: `image-${index + 1}`,
-        url,
+        url: `${baseUrl}/${url}`,
         pageNumber: index + 1,
         rotation: 0,
         filename: file.name,
@@ -62,6 +59,7 @@ function App() {
         type: "error",
         text: "Failed to upload file. Please try again.",
       });
+      console.log("error uploading file : ", error);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +83,7 @@ function App() {
   };
 
   const handleDelete = (id) => {
-    const imageToDelete = images.find(img => img.id === id);
+    const imageToDelete = images.find((img) => img.id === id);
     if (imageToDelete) {
       setImages(images.filter((img) => img.id !== id));
       recordDeletion(id, imageToDelete.url);
