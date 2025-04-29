@@ -32,11 +32,12 @@ function App() {
       const tiffFile = new FormData();
       tiffFile.append("file", file);
 
+      console.time("load-file");
       const res = await fetch(`${apiUrl}/upload/`, {
         method: "POST",
         body: tiffFile,
       });
-
+      console.timeEnd("load-file");
       const tiffData = await res.json();
       const tiffImages = tiffData?.data || [];
 
