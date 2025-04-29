@@ -322,36 +322,36 @@ export const useImageChanges = (images) => {
       if (rotationData) {
         console.log("Rotation changes to be saved:", rotationData);
 
-        // fetch(`${apiUrl}/rotate/`, {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //   },
-        //   body: JSON.stringify(rotationData),
-        // })
-        //   .then((res) => {
-        //     console.log(res);
-        //     return res.json();
-        //   })
-        //   .then((data) => console.log(data))
-        //   .catch((err) => console.log(err));
+        fetch(`${apiUrl}/rotate/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(rotationData),
+        })
+          .then((res) => {
+            console.log(res);
+            return res.json();
+          })
+          .then((data) => console.log(data))
+          .catch((err) => console.log(err));
       }
 
       if (deletionData) {
         console.log("Deletion changes to be saved:", deletionData);
-        // fetch(`${apiUrl}/delete/`, {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //   },
-        //   body: JSON.stringify(deletionData),
-        // })
-        //   .then((res) => {
-        //     console.log(res);
-        //     return res.json();
-        //   })
-        //   .then((data) => console.log(data))
-        //   .catch((err) => console.log(err));
+        fetch(`${apiUrl}/delete/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(deletionData),
+        })
+          .then((res) => {
+            console.log(res);
+            return res.json();
+          })
+          .then((data) => console.log(data))
+          .catch((err) => console.log(err));
       }
       if (reorderData) console.log("Reorder changes to be saved:", reorderData);
 
