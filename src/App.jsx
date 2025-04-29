@@ -23,75 +23,48 @@ function App() {
     recordReorder,
     saveChanges,
     discardChanges,
-  } = useImageChanges();
+  } = useImageChanges(images);
 
   const handleFileAccepted = async (file) => {
     setIsLoading(true);
-    // Simulate file processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // Simulate backend processing delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Create dummy images with varied sizes and rotations
-    const dummyImages = [
-      {
-        id: "image-1",
-        url: "https://picsum.photos/800/600?random=1",
-        pageNumber: 1,
-        rotation: 0,
-        filename: "document_001.tiff",
-      },
-      {
-        id: "image-2",
-        url: "https://picsum.photos/600/800?random=2",
-        pageNumber: 2,
-        rotation: 0,
-        filename: "document_002.tiff",
-      },
-      {
-        id: "image-3",
-        url: "https://picsum.photos/800/800?random=3",
-        pageNumber: 3,
-        rotation: 0,
-        filename: "document_003.tiff",
-      },
-      {
-        id: "image-4",
-        url: "https://picsum.photos/600/600?random=4",
-        pageNumber: 4,
-        rotation: 0,
-        filename: "document_004.tiff",
-      },
-      {
-        id: "image-5",
-        url: "https://picsum.photos/800/600?random=5",
-        pageNumber: 5,
-        rotation: 0,
-        filename: "document_005.tiff",
-      },
-      {
-        id: "image-6",
-        url: "https://picsum.photos/600/800?random=6",
-        pageNumber: 6,
-        rotation: 0,
-        filename: "document_006.tiff",
-      },
-      {
-        id: "image-7",
-        url: "https://picsum.photos/800/800?random=7",
-        pageNumber: 7,
-        rotation: 0,
-        filename: "document_007.tiff",
-      },
-      {
-        id: "image-8",
-        url: "https://picsum.photos/600/600?random=8",
-        pageNumber: 8,
-        rotation: 0,
-        filename: "document_008.tiff",
-      },
-    ];
+      // Simulate backend response with an array of image URLs
+      const dummyImageUrls = [
+        "https://picsum.photos/800/600?random=1",
+        "https://picsum.photos/600/800?random=2",
+        "https://picsum.photos/800/800?random=3",
+        "https://picsum.photos/600/600?random=4",
+        "https://picsum.photos/800/600?random=5",
+        "https://picsum.photos/600/800?random=6",
+        "https://picsum.photos/800/800?random=7",
+        "https://picsum.photos/600/600?random=8",
+      ];
 
-    setImages(dummyImages);
-    setIsLoading(false);
+      // Transform the URLs into our image objects - this structure will match what we'll get from the backend
+      const newImages = dummyImageUrls.map((url, index) => ({
+        id: `image-${index + 1}`,
+        url,
+        pageNumber: index + 1,
+        rotation: 0,
+        filename: file.name,
+      }));
+
+      setImages(newImages);
+      setToastMessage({
+        type: "success",
+        text: "File uploaded successfully!",
+      });
+    } catch (error) {
+      setToastMessage({
+        type: "error",
+        text: "Failed to upload file. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleImageClick = (image) => {
@@ -112,8 +85,11 @@ function App() {
   };
 
   const handleDelete = (id) => {
-    setImages(images.filter((img) => img.id !== id));
-    recordDeletion(id);
+    const imageToDelete = images.find(img => img.id === id);
+    if (imageToDelete) {
+      setImages(images.filter((img) => img.id !== id));
+      recordDeletion(id, imageToDelete.url);
+    }
   };
 
   const handleReorder = (oldIndex, newIndex, imageId) => {

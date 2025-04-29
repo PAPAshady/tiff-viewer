@@ -7,15 +7,176 @@ export const CHANGE_TYPES = {
   REORDER: "REORDER",
 };
 
-export const useImageChanges = () => {
+// Custom hook for tracking image positions
+const usePositionTracking = () => {
+  const [originalPositions, setOriginalPositions] = useState({});
+  const [currentPositions, setCurrentPositions] = useState({});
+
+  const updatePosition = useCallback((imageId, newPosition) => {
+    setCurrentPositions(prev => ({
+      ...prev,
+      [imageId]: newPosition
+    }));
+  }, []);
+
+  const storeOriginalPosition = useCallback((imageId, position) => {
+    setOriginalPositions(prev => ({
+      ...prev,
+      [imageId]: position
+    }));
+  }, []);
+
+  const handleDeletion = useCallback((deletedPosition) => {
+    if (deletedPosition !== undefined) {
+      setCurrentPositions(prev => {
+        const newPositions = { ...prev };
+        Object.entries(newPositions).forEach(([id, position]) => {
+          if (position > deletedPosition) {
+            newPositions[id] = position - 1;
+          }
+        });
+        return newPositions;
+      });
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    setOriginalPositions({});
+    setCurrentPositions({});
+  }, []);
+
+  return {
+    originalPositions,
+    currentPositions,
+    updatePosition,
+    storeOriginalPosition,
+    handleDeletion,
+    reset
+  };
+};
+
+export const useImageChanges = (images) => {
   // Track all changes in order
   const [changes, setChanges] = useState([]);
   // Track if there are unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  // Track original positions of images before any reordering
-  const [originalPositions, setOriginalPositions] = useState({});
-  // Track current positions to calculate final positions
-  const [currentPositions, setCurrentPositions] = useState({});
+  
+  // Use the position tracking hook
+  const {
+    originalPositions,
+    currentPositions,
+    updatePosition,
+    storeOriginalPosition,
+    handleDeletion,
+    reset: resetPositions
+  } = usePositionTracking();
+
+  // Helper function to handle delete changes
+  const handleDeleteChange = (prevChanges, payload) => {
+    handleDeletion(currentPositions[payload.imageId]);
+    // Remove any previous changes for this image
+    const filteredChanges = prevChanges.filter((change) => {
+      if (change.payload.imageId === payload.imageId) {
+        return false; // Remove changes for the deleted image
+      }
+      return true;
+    });
+
+    return [
+      ...filteredChanges,
+      {
+        id: Date.now(),
+        type: CHANGE_TYPES.DELETE,
+        payload,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+  };
+
+  // Helper function to handle rotation changes
+  const handleRotationChange = (prevChanges, payload) => {
+    // If rotation is 0 or 360, remove any rotation changes for this image
+    if (payload.rotation === 0 || payload.rotation === 360) {
+      return prevChanges.filter(
+        (change) =>
+          !(
+            change.type === CHANGE_TYPES.ROTATE &&
+            change.payload.imageId === payload.imageId
+          ),
+      );
+    }
+
+    const existingRotationIndex = prevChanges.findIndex(
+      (change) =>
+        change.type === CHANGE_TYPES.ROTATE &&
+        change.payload.imageId === payload.imageId,
+    );
+
+    if (existingRotationIndex !== -1) {
+      // Update existing rotation
+      const updatedChanges = [...prevChanges];
+      updatedChanges[existingRotationIndex] = {
+        ...updatedChanges[existingRotationIndex],
+        payload: {
+          ...payload,
+          timestamp: new Date().toISOString(),
+        },
+      };
+      return updatedChanges;
+    }
+
+    return [
+      ...prevChanges,
+      {
+        id: Date.now(),
+        type: CHANGE_TYPES.ROTATE,
+        payload,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+  };
+
+  // Helper function to handle reorder changes
+  const handleReorderChange = (prevChanges, payload) => {
+    if (!originalPositions[payload.imageId]) {
+      storeOriginalPosition(payload.imageId, payload.oldIndex);
+    }
+    updatePosition(payload.imageId, payload.newIndex);
+
+    // Get the original position for this image
+    const originalOldIndex =
+      originalPositions[payload.imageId] ?? payload.oldIndex;
+
+    // Remove any previous reorder changes for this image
+    const changesWithoutPreviousReorder = prevChanges.filter(
+      (change) =>
+        !(
+          change.type === CHANGE_TYPES.REORDER &&
+          change.payload.imageId === payload.imageId
+        ),
+    );
+
+    return [
+      ...changesWithoutPreviousReorder,
+      {
+        id: Date.now(),
+        type: CHANGE_TYPES.REORDER,
+        payload: {
+          ...payload,
+          oldIndex: originalOldIndex,
+          // Include information about affected positions
+          affectedImages: Object.entries(currentPositions)
+            .filter(([id]) => id !== payload.imageId)
+            .map(([id, position]) => ({
+              imageId: id,
+              originalPosition: originalPositions[id],
+              currentPosition: position,
+            })),
+        },
+        timestamp: new Date().toISOString(),
+      },
+    ];
+  };
 
   // Add or update a change in the changes array
   const addChange = useCallback(
@@ -23,129 +184,26 @@ export const useImageChanges = () => {
       setChanges((prevChanges) => {
         let newChanges;
 
-        // For DELETE changes, remove any previous changes for this image
-        if (changeType === CHANGE_TYPES.DELETE) {
-          // Also remove any reorder changes that might affect this image
-          const filteredChanges = prevChanges.filter((change) => {
-            if (change.payload.imageId === payload.imageId) {
-              return false; // Remove changes for the deleted image
-            }
-            return true;
-          });
-
-          newChanges = [
-            ...filteredChanges,
-            {
-              id: Date.now(),
-              type: changeType,
-              payload,
-              timestamp: new Date().toISOString(),
-            },
-          ];
-        }
-        // For ROTATE changes, update or add the rotation
-        else if (changeType === CHANGE_TYPES.ROTATE) {
-          // If rotation is 0 or 360, remove any rotation changes for this image
-          if (payload.rotation === 0 || payload.rotation === 360) {
-            newChanges = prevChanges.filter(
-              (change) =>
-                !(
-                  change.type === CHANGE_TYPES.ROTATE &&
-                  change.payload.imageId === payload.imageId
-                ),
-            );
-          } else {
-            const existingRotationIndex = prevChanges.findIndex(
-              (change) =>
-                change.type === CHANGE_TYPES.ROTATE &&
-                change.payload.imageId === payload.imageId,
-            );
-
-            if (existingRotationIndex !== -1) {
-              // Update existing rotation
-              const updatedChanges = [...prevChanges];
-              updatedChanges[existingRotationIndex] = {
-                ...updatedChanges[existingRotationIndex],
-                payload: {
-                  ...payload,
-                  timestamp: new Date().toISOString(),
-                },
-              };
-              newChanges = updatedChanges;
-            } else {
-              newChanges = [
-                ...prevChanges,
-                {
-                  id: Date.now(),
-                  type: changeType,
-                  payload,
-                  timestamp: new Date().toISOString(),
-                },
-              ];
-            }
-          }
-        }
-        // For REORDER changes, track both original and current positions
-        else if (changeType === CHANGE_TYPES.REORDER) {
-          // Store original position if not already stored
-          const newOriginalPositions = { ...originalPositions };
-          if (!newOriginalPositions[payload.imageId]) {
-            newOriginalPositions[payload.imageId] = payload.oldIndex;
-            setOriginalPositions(newOriginalPositions);
-          }
-
-          // Update current position
-          const newCurrentPositions = {
-            ...currentPositions,
-            [payload.imageId]: payload.newIndex,
-          };
-          setCurrentPositions(newCurrentPositions);
-
-          // Get the original position for this image
-          const originalOldIndex =
-            newOriginalPositions[payload.imageId] ?? payload.oldIndex;
-
-          // Remove any previous reorder changes for this image
-          const changesWithoutPreviousReorder = prevChanges.filter(
-            (change) =>
-              !(
-                change.type === CHANGE_TYPES.REORDER &&
-                change.payload.imageId === payload.imageId
-              ),
-          );
-
-          newChanges = [
-            ...changesWithoutPreviousReorder,
-            {
-              id: Date.now(),
-              type: changeType,
-              payload: {
-                ...payload,
-                oldIndex: originalOldIndex,
-                // Include information about affected positions
-                affectedImages: Object.entries(newCurrentPositions)
-                  .filter(([id]) => id !== payload.imageId)
-                  .map(([id, position]) => ({
-                    imageId: id,
-                    originalPosition: newOriginalPositions[id],
-                    currentPosition: position,
-                  })),
+        switch (changeType) {
+          case CHANGE_TYPES.DELETE:
+            newChanges = handleDeleteChange(prevChanges, payload);
+            break;
+          case CHANGE_TYPES.ROTATE:
+            newChanges = handleRotationChange(prevChanges, payload);
+            break;
+          case CHANGE_TYPES.REORDER:
+            newChanges = handleReorderChange(prevChanges, payload);
+            break;
+          default:
+            newChanges = [
+              ...prevChanges,
+              {
+                id: Date.now(),
+                type: changeType,
+                payload,
+                timestamp: new Date().toISOString(),
               },
-              timestamp: new Date().toISOString(),
-            },
-          ];
-        }
-        // Default case
-        else {
-          newChanges = [
-            ...prevChanges,
-            {
-              id: Date.now(),
-              type: changeType,
-              payload,
-              timestamp: new Date().toISOString(),
-            },
-          ];
+            ];
         }
 
         setHasUnsavedChanges(newChanges?.length > 0);
@@ -170,26 +228,13 @@ export const useImageChanges = () => {
 
   // Record deletion
   const recordDeletion = useCallback(
-    (imageId) => {
-      // When deleting an image, we need to update positions of other images
-      const deletedPosition = currentPositions[imageId];
-      if (deletedPosition !== undefined) {
-        // Update positions of images that come after the deleted image
-        Object.entries(currentPositions).forEach(([id, position]) => {
-          if (position > deletedPosition) {
-            setCurrentPositions((prev) => ({
-              ...prev,
-              [id]: position - 1,
-            }));
-          }
-        });
-      }
-
+    (imageId, imageUrl) => {
       addChange(CHANGE_TYPES.DELETE, {
         imageId,
+        imageUrl,
       });
     },
-    [addChange, currentPositions],
+    [addChange],
   );
 
   // Record reordering
@@ -204,6 +249,46 @@ export const useImageChanges = () => {
     [addChange],
   );
 
+  // Helper function to process rotation changes
+  const processRotationChanges = (rotationChanges) => {
+    if (!rotationChanges?.length) return null;
+
+    return rotationChanges.reduce((acc, change) => {
+      const imageUrl = images.find(img => img.id === change.payload.imageId)?.url;
+      if (imageUrl) {
+        acc[imageUrl] = change.payload.rotation;
+      }
+      return acc;
+    }, {});
+  };
+
+  // Helper function to process deletion changes
+  const processDeletionChanges = (deletionChanges) => {
+    if (!deletionChanges?.length) return null;
+
+    return deletionChanges.reduce((acc, change) => {
+      const imageUrl = change.payload.imageUrl;
+      if (imageUrl) {
+        acc[imageUrl] = 1;
+      }
+      return acc;
+    }, {});
+  };
+
+  // Helper function to process reorder changes
+  const processReorderChanges = (reorderChanges) => {
+    if (!reorderChanges?.length) return null;
+
+    return reorderChanges.map(change => {
+      const imageUrl = images.find(img => img.id === change.payload.imageId)?.url;
+      return {
+        url: imageUrl,
+        oldIndex: change.payload.oldIndex,
+        newIndex: change.payload.newIndex
+      };
+    }).filter(item => item.url);
+  };
+
   // Save changes to backend
   const saveChanges = useCallback(async () => {
     try {
@@ -216,28 +301,34 @@ export const useImageChanges = () => {
         return acc;
       }, {});
 
-      console.log(groupedChanges);
+      // Process each type of change
+      const rotationData = processRotationChanges(groupedChanges[CHANGE_TYPES.ROTATE]);
+      const deletionData = processDeletionChanges(groupedChanges[CHANGE_TYPES.DELETE]);
+      const reorderData = processReorderChanges(groupedChanges[CHANGE_TYPES.REORDER]);
+
+      // Log the changes that would be sent to the backend
+      if (rotationData) console.log('Rotation changes to be saved:', rotationData);
+      if (deletionData) console.log('Deletion changes to be saved:', deletionData);
+      if (reorderData) console.log('Reorder changes to be saved:', reorderData);
 
       // Clear all tracking states after successful save
       setChanges([]);
       setHasUnsavedChanges(false);
-      setOriginalPositions({});
-      setCurrentPositions({});
+      resetPositions();
 
       return true;
     } catch (error) {
       console.error("Error saving changes:", error);
       throw error;
     }
-  }, [changes]);
+  }, [changes, images, resetPositions]);
 
   // Discard all unsaved changes
   const discardChanges = useCallback(() => {
     setChanges([]);
     setHasUnsavedChanges(false);
-    setOriginalPositions({});
-    setCurrentPositions({});
-  }, []);
+    resetPositions();
+  }, [resetPositions]);
 
   return {
     changes,
