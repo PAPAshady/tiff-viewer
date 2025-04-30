@@ -36,6 +36,7 @@ function App() {
       const res = await fetch(`${apiUrl}/upload/`, {
         method: "POST",
         body: tiffFile,
+        credentials: "include",
       });
       console.timeEnd("load-file");
       const tiffData = await res.json();

@@ -282,18 +282,20 @@ export const useImageChanges = (images) => {
   const processReorderChanges = (reorderChanges) => {
     if (!reorderChanges?.length) return null;
 
-    return reorderChanges
-      .map((change) => {
-        const imageUrl = images.find(
-          (img) => img.id === change.payload.imageId,
-        )?.url;
-        return {
-          url: imageUrl,
-          oldIndex: change.payload.oldIndex,
-          newIndex: change.payload.newIndex,
-        };
-      })
-      .filter((item) => item.url);
+    // Create a map of current positions for each image
+    const positionMap = new Map();
+    images.forEach((img, index) => {
+      positionMap.set(img.id, index);
+    });
+
+    // Sort images based on their current positions
+    const orderedFiles = [...images]
+      .sort((a, b) => positionMap.get(a.id) - positionMap.get(b.id))
+      .map(img => img.url);
+
+    return {
+      file: orderedFiles
+    };
   };
 
   // Save changes to backend
@@ -319,41 +321,63 @@ export const useImageChanges = (images) => {
         groupedChanges[CHANGE_TYPES.REORDER],
       );
 
-      if (rotationData) {
-        console.log("Rotation changes to be saved:", rotationData);
+      // Always get the current order of files, even if no reorder changes
+      const currentOrderData = {
+        file: images.map(img => img.url)
+      };
 
-        fetch(`${apiUrl}/rotate/`, {
+      if (rotationData) {
+        try {
+        const res = await fetch(`${apiUrl}/rotate/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(rotationData),
-        })
-          .then((res) => {
-            console.log(res);
-            return res.json();
-          })
-          .then((data) => console.log(data))
-          .catch((err) => console.log(err));
+          credentials: "include",
+        });
+        const rotationRes = await res.json();
+        console.log("Rotation response:", rotationRes);
+        } catch (error) {
+          console.error("Error saving rotation changes:", error);
+        }
       }
 
       if (deletionData) {
-        console.log("Deletion changes to be saved:", deletionData);
-        fetch(`${apiUrl}/delete/`, {
+        try {
+        const res = await fetch(`${apiUrl}/delete/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(deletionData),
-        })
-          .then((res) => {
-            console.log(res);
-            return res.json();
-          })
-          .then((data) => console.log(data))
-          .catch((err) => console.log(err));
+          credentials: "include",
+        });
+        const deletionRes = await res.json();
+        console.log("Deletion response:", deletionRes);
+        } catch (error) {
+          console.error("Error saving deletion changes:", error);
+        }
       }
-      if (reorderData) console.log("Reorder changes to be saved:", reorderData);
+
+      // Always call reorder API if there are any changes in order to recieve the downloadable link
+      if (changes.length > 0) {
+        try {
+        console.log("Sending current order to backend:", currentOrderData);
+         const res = await fetch(`${apiUrl}/reorder/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(currentOrderData),
+          credentials: 'include'
+        });
+        const reorderRes = await res.json();
+        console.log("Reorder response:", reorderRes);
+        } catch (error) {
+          console.error("Error saving reorder changes:", error);
+        }
+      }
 
       // Clear all tracking states after successful save
       setChanges([]);
