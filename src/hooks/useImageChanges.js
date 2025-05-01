@@ -1,59 +1,12 @@
 import { useState, useCallback } from "react";
-import { apiUrl, baseUrl } from "../constants";
+import { apiUrl } from "../constants";
+import usePositionTracking from "./usePositionTracking";
 
 // Define change types as constants
 export const CHANGE_TYPES = {
   ROTATE: "ROTATE",
   DELETE: "DELETE",
   REORDER: "REORDER",
-};
-
-// Custom hook for tracking image positions
-const usePositionTracking = () => {
-  const [originalPositions, setOriginalPositions] = useState({});
-  const [currentPositions, setCurrentPositions] = useState({});
-
-  const updatePosition = useCallback((imageId, newPosition) => {
-    setCurrentPositions((prev) => ({
-      ...prev,
-      [imageId]: newPosition,
-    }));
-  }, []);
-
-  const storeOriginalPosition = useCallback((imageId, position) => {
-    setOriginalPositions((prev) => ({
-      ...prev,
-      [imageId]: position,
-    }));
-  }, []);
-
-  const handleDeletion = useCallback((deletedPosition) => {
-    if (deletedPosition !== undefined) {
-      setCurrentPositions((prev) => {
-        const newPositions = { ...prev };
-        Object.entries(newPositions).forEach(([id, position]) => {
-          if (position > deletedPosition) {
-            newPositions[id] = position - 1;
-          }
-        });
-        return newPositions;
-      });
-    }
-  }, []);
-
-  const reset = useCallback(() => {
-    setOriginalPositions({});
-    setCurrentPositions({});
-  }, []);
-
-  return {
-    originalPositions,
-    currentPositions,
-    updatePosition,
-    storeOriginalPosition,
-    handleDeletion,
-    reset,
-  };
 };
 
 export const useImageChanges = (images) => {
@@ -291,10 +244,10 @@ export const useImageChanges = (images) => {
     // Sort images based on their current positions
     const orderedFiles = [...images]
       .sort((a, b) => positionMap.get(a.id) - positionMap.get(b.id))
-      .map(img => img.url);
+      .map((img) => img.url);
 
     return {
-      file: orderedFiles
+      file: orderedFiles,
     };
   };
 
@@ -323,19 +276,19 @@ export const useImageChanges = (images) => {
 
       // Always get the current order of files, even if no reorder changes
       const currentOrderData = {
-        file: images.map(img => img.url)
+        file: images.map((img) => img.url),
       };
 
       if (rotationData) {
         try {
-        const res = await fetch(`${apiUrl}/rotate/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(rotationData),
-          credentials: "include",
-        });
+          const res = await fetch(`${apiUrl}/rotate/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(rotationData),
+            credentials: "include",
+          });
         } catch (error) {
           console.error("Error saving rotation changes:", error);
         }
@@ -343,14 +296,14 @@ export const useImageChanges = (images) => {
 
       if (deletionData) {
         try {
-        const res = await fetch(`${apiUrl}/delete/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(deletionData),
-          credentials: "include",
-        });
+          const res = await fetch(`${apiUrl}/delete/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(deletionData),
+            credentials: "include",
+          });
         } catch (error) {
           console.error("Error saving deletion changes:", error);
         }
@@ -365,11 +318,10 @@ export const useImageChanges = (images) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(currentOrderData),
-            credentials: 'include'
+            credentials: "include",
           });
           const reorderRes = await res.json();
-          console.log("Reorder response:", reorderRes);
-          
+
           // Clear all tracking states after successful save
           setChanges([]);
           setHasUnsavedChanges(false);
@@ -377,7 +329,7 @@ export const useImageChanges = (images) => {
 
           // Return the download URL from the response
           return {
-            downloadUrl: reorderRes.data
+            downloadUrl: reorderRes.data,
           };
         } catch (error) {
           console.error("Error saving reorder changes:", error);
