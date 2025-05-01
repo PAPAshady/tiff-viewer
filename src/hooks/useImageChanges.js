@@ -336,8 +336,6 @@ export const useImageChanges = (images) => {
           body: JSON.stringify(rotationData),
           credentials: "include",
         });
-        const rotationRes = await res.json();
-        console.log("Rotation response:", rotationRes);
         } catch (error) {
           console.error("Error saving rotation changes:", error);
         }
@@ -353,29 +351,37 @@ export const useImageChanges = (images) => {
           body: JSON.stringify(deletionData),
           credentials: "include",
         });
-        const deletionRes = await res.json();
-        console.log("Deletion response:", deletionRes);
         } catch (error) {
           console.error("Error saving deletion changes:", error);
         }
       }
 
-      // Always call reorder API if there are any changes in order to recieve the downloadable link
+      // Always call reorder API if there are any changes in order to receive the downloadable link
       if (changes.length > 0) {
         try {
-        console.log("Sending current order to backend:", currentOrderData);
-         const res = await fetch(`${apiUrl}/reorder/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(currentOrderData),
-          credentials: 'include'
-        });
-        const reorderRes = await res.json();
-        console.log("Reorder response:", reorderRes);
+          const res = await fetch(`${apiUrl}/reorder/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(currentOrderData),
+            credentials: 'include'
+          });
+          const reorderRes = await res.json();
+          console.log("Reorder response:", reorderRes);
+          
+          // Clear all tracking states after successful save
+          setChanges([]);
+          setHasUnsavedChanges(false);
+          resetPositions();
+
+          // Return the download URL from the response
+          return {
+            downloadUrl: reorderRes.data
+          };
         } catch (error) {
           console.error("Error saving reorder changes:", error);
+          throw error;
         }
       }
 

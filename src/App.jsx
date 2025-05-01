@@ -4,6 +4,7 @@ import { FiMenu, FiX, FiSave } from "react-icons/fi";
 import FileUpload from "./components/FileUpload";
 import ImageGrid from "./components/ImageGrid";
 import ImageViewer from "./components/ImageViewer";
+import DownloadBox from "./components/DownloadBox";
 import useMediaQuery from "./hooks/useMediaQuery";
 import { useImageChanges } from "./hooks/useImageChanges";
 import { Toast } from "./components/Toast";
@@ -16,6 +17,7 @@ function App() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [downloadUrl, setDownloadUrl] = useState(null);
 
   const {
     hasUnsavedChanges,
@@ -136,7 +138,10 @@ function App() {
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
-      await saveChanges();
+      const result = await saveChanges();
+      if (result?.downloadUrl) {
+        setDownloadUrl(result.downloadUrl);
+      }
       setToastMessage({
         type: "success",
         text: "All changes saved successfully!",
@@ -287,6 +292,14 @@ function App() {
           message={toastMessage.text}
           type={toastMessage.type}
           onClose={() => setToastMessage(null)}
+        />
+      )}
+
+      {/* Download Box */}
+      {downloadUrl && (
+        <DownloadBox
+          downloadUrl={downloadUrl}
+          onClose={() => setDownloadUrl(null)}
         />
       )}
     </div>
