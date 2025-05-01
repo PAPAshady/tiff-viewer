@@ -269,7 +269,7 @@ function App() {
             {isLoading && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div className="rounded-lg bg-white p-4 shadow-lg">
-                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+                  <div className="h-8 w-8 animate-spin rounded-full mx-auto border-b-2 border-blue-500"></div>
                   <p className="mt-2 text-gray-600">Processing TIFF file...</p>
                 </div>
               </div>
