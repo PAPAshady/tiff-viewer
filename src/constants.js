@@ -1,2 +1,2 @@
-export const baseUrl = "http://localhost:8000";
+export const baseUrl = "https://tiff.studynation.ir";
 export const apiUrl = `${baseUrl}/api`;
